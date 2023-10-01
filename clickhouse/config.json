@@ -5,14 +5,9 @@
     "description": "Clickhouse Home Assistant add-on",
     "arch": ["amd64"],
     "startup": "services",
-    "boot": "auto",
     "init": false,
     "ports": {
         "8124": 8124,
         "9001": 9001
-    },
-    "port_description": {
-        "8124/tcp": "ClickHouse HTTP interface",
-        "9001/tcp": "ClickHouse native interface"
     }
 }
