@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "slug": "clickhouse_addon",
   "description": "Clickhouse Home Assistant add-on",
-  "arch": ["amd64"],
+  "arch": ["amd64", "arm64"],
   "startup": "services",
   "init": false,
   "ports": {
