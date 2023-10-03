@@ -1,0 +1,13 @@
+{
+  "name": "Clickhouse Add-on",
+  "version": "1.0.0",
+  "slug": "clickhouse_addon",
+  "description": "Clickhouse Home Assistant add-on",
+  "arch": ["amd64"],
+  "startup": "services",
+  "init": false,
+  "ports": {
+      "8124": 8124,
+      "9001": 9001
+  }
+}
