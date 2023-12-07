@@ -1,4 +1,4 @@
-ARG BUILD_FROM=ghcr.io/hassio-addons/base/aarch64:14.0.2
+ARG BUILD_FROM=ghcr.io/hassio-addons/base/aarch64:14.3.3
 ARG BUILD_ARCH=aarch64
 
 FROM ubuntu:20.04 AS glibc-donor
