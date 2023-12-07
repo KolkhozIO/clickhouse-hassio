@@ -3,9 +3,6 @@
     <listen_host>::</listen_host>
     <listen_host>0.0.0.0</listen_host>
     <listen_try>1</listen_try>
-     <http_port>8124</http_port>
-    <tcp_port>9001</tcp_port>
-
     <!--
     <logger>
         <console>1</console>
