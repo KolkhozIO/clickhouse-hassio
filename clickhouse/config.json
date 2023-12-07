@@ -9,7 +9,7 @@
   "panel_title": "ClickHouse",
   "init": false,
   "ports": {
-    "8123/tcp": null,
-    "9000/tcp": null
+    "8124/tcp": null,
+    "9001/tcp": null
   }
 }
