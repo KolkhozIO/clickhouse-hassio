@@ -71,7 +71,7 @@ RUN arch=${BUILD_ARCH:-amd64} \
 # we need to allow "others" access to clickhouse folder, because docker container
 # can be started with arbitrary uid (openshift usecase)
 
-EXPOSE 9001 8124 9009
+EXPOSE 9000 8123 9009
 
 VOLUME /var/lib/clickhouse \
        /var/log/clickhouse-server
