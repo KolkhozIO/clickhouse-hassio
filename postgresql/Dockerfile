@@ -1,9 +1,5 @@
-#
-# NOTE: THIS DOCKERFILE IS GENERATED VIA "apply-templates.sh"
-#
-# PLEASE DO NOT EDIT IT DIRECTLY.
-#
-
+ARG BUILD_FROM=ghcr.io/hassio-addons/base/aarch64:14.3.3
+ARG BUILD_ARCH=aarch64
 
 FROM alpine:3.19
 
