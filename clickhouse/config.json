@@ -1,0 +1,15 @@
+{
+  "name": "Clickhouse Add-on",
+  "version": "1.0.0",
+  "slug": "clickhouse_addon",
+  "description": "Clickhouse Home Assistant add-on",
+  "arch": ["aarch64", "amd64", "armhf", "armv7", "i386"],
+  "startup": "services",
+  "panel_icon": "mdi:database",
+  "panel_title": "ClickHouse",
+  "init": false,
+  "ports": {
+    "8123/tcp": 8124,
+    "9000/tcp": 9001
+  }
+}

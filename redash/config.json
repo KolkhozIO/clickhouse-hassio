@@ -1,0 +1,17 @@
+{
+  "name": "Redash Add-on",
+  "version": "1.0.0",
+  "slug": "redash",
+  "description": "Redash Home Assistant add-on",
+  "arch": ["aarch64", "amd64", "armhf", "armv7", "i386"],
+  "startup": "services",
+  "panel_icon": "mdi:home-analytics",
+  "panel_title": "Redash",
+  "init": false,
+  "ports": {
+    "80/tcp": 8888
+  },
+  "docker_api": true,
+  "environment": {"DOCKER_SOCK": "unix:///run/docker.sock",
+  "DOCKER_HOST": "unix:///run/docker.sock"}
+}

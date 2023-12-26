@@ -1,0 +1,9 @@
+<clickhouse>
+    <profiles>
+        <default>
+            <allow_experimental_materialized_postgresql_table>1</allow_experimental_materialized_postgresql_table>
+            <allow_experimental_database_materialized_postgresql>1</allow_experimental_database_materialized_postgresql>
+        </default>
+    </profiles>
+    
+</clickhouse>

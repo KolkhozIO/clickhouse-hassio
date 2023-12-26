@@ -1,0 +1,6 @@
+{
+  "message": {
+    "name": "Message",
+    "description": "Clickhouse is started, listening on port 8124"
+  }
+}
