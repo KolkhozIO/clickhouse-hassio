@@ -1,7 +1,7 @@
-ARG BUILD_FROM=ghcr.io/hassio-addons/base/aarch64:14.3.3
+ARG BUILD_FROM=ghcr.io/hassio-addons/base/aarch64:17.2.1
 ARG BUILD_ARCH=aarch64
 
-FROM ubuntu:20.04 AS glibc-donor
+FROM ubuntu:22.04 AS glibc-donor
 
 ARG BUILD_ARCH
 RUN arch=${BUILD_ARCH:-amd64} \
@@ -20,7 +20,7 @@ ENV LANG=en_US.UTF-8 \
     TZ=UTC \
     CLICKHOUSE_CONFIG=/etc/clickhouse-server/config.xml
 
-COPY --from=glibc-donor /lib/linux-gnu/libc.so.6 /lib/linux-gnu/libdl.so.2 /lib/linux-gnu/libm.so.6 /lib/linux-gnu/libpthread.so.0 /lib/linux-gnu/librt.so.1 /lib/linux-gnu/libnss_dns.so.2 /lib/linux-gnu/libnss_files.so.2 /lib/linux-gnu/libresolv.so.2 /lib/linux-gnu/ld-2.31.so /lib/
+COPY --from=glibc-donor /lib/linux-gnu/libc.so.6 /lib/linux-gnu/libdl.so.2 /lib/linux-gnu/libm.so.6 /lib/linux-gnu/libpthread.so.0 /lib/linux-gnu/librt.so.1 /lib/linux-gnu/libnss_dns.so.2 /lib/linux-gnu/libnss_files.so.2 /lib/linux-gnu/libresolv.so.2 /lib/linux-gnu/ld-linux-* /lib/
 COPY --from=glibc-donor /etc/nsswitch.conf /etc/
 COPY docker_related_config.xml /etc/clickhouse-server/config.d/
 COPY entrypoint.sh /entrypoint.sh
@@ -28,22 +28,15 @@ COPY entrypoint.sh /entrypoint.sh
 ARG BUILD_ARCH
 RUN arch=${BUILD_ARCH:-amd64} \
     && case $arch in \
-        amd64) mkdir -p /lib64 && ln -sf /lib/ld-2.31.so /lib64/ld-linux-x86-64.so.2 ;; \
-        arm64) ln -sf /lib/ld-2.31.so /lib/ld-linux-aarch64.so.1 ;; \
+        amd64) mkdir -p /lib64 && ln -sf /lib/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2 ;; \
+        arm64) : ;; \
     esac
 
 # lts / testing / prestable / etc
 ARG REPO_CHANNEL="stable"
 ARG REPOSITORY="https://packages.clickhouse.com/tgz/${REPO_CHANNEL}"
-ARG VERSION="23.11.1.2711"
+ARG VERSION="24.8.12.35"
 ARG PACKAGES="clickhouse-client clickhouse-server clickhouse-common-static"
-
-# user/group precreated explicitly with fixed uid/gid on purpose.
-# It is especially important for rootless containers: in that case entrypoint
-# can't do chown and owners of mounted volumes should be configured externally.
-# We do that in advance at the begining of Dockerfile before any packages will be
-# installed to prevent picking those uid / gid by some unrelated software.
-# The same uid / gid (101) is used both for alpine and ubuntu.
 
 RUN arch=${BUILD_ARCH:-amd64} \
     && for package in ${PACKAGES}; do \
@@ -56,7 +49,7 @@ RUN arch=${BUILD_ARCH:-amd64} \
             && tar xvzf "${package}-${VERSION}-${arch}.tgz" --strip-components=1 -C / \
     ) \
     ; done \
-    && rm /tmp/*.tgz /install -r \
+    && rm /tmp/*.tgz /install -rf \
     && addgroup -S -g 101 clickhouse \
     && adduser -S -h /var/lib/clickhouse -s /bin/bash -G clickhouse -g "ClickHouse server" -u 101 clickhouse \
     && mkdir -p /var/lib/clickhouse /var/log/clickhouse-server /etc/clickhouse-server/config.d /etc/clickhouse-server/users.d /etc/clickhouse-client /docker-entrypoint-initdb.d \
@@ -68,9 +61,6 @@ RUN arch=${BUILD_ARCH:-amd64} \
     && echo "UTC" > /etc/timezone \
     && chmod ugo+Xrw -R /var/lib/clickhouse /var/log/clickhouse-server /etc/clickhouse-server /etc/clickhouse-client
 
-# we need to allow "others" access to clickhouse folder, because docker container
-# can be started with arbitrary uid (openshift usecase)
-
 EXPOSE 9000 8123 9009
 
 VOLUME /var/lib/clickhouse \
@@ -79,3 +69,6 @@ VOLUME /var/lib/clickhouse \
 COPY default_setting.xml /etc/clickhouse-server/users.d/
 
 ENTRYPOINT ["/entrypoint.sh"]
+
+# we need to allow "others" access to clickhouse folder, because docker container
+# can be started with arbitrary uid (openshift usecase)

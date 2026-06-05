@@ -1,0 +1,9 @@
+#!/usr/bin/with-contenv bashio
+# ==============================================================================
+# Take down the whole add-on when the ingestor service exits, so the
+# Supervisor can apply its restart policy instead of s6 silently looping.
+# ==============================================================================
+declare exit_code="${1}"
+
+bashio::log.warning "ClickHouse ingestor stopped (exit code ${exit_code}); halting add-on"
+exec /run/s6/basedir/bin/halt

@@ -1,0 +1,36 @@
+{
+  "name": "ClickHouse Ingestor Add-on",
+  "version": "1.0.0",
+  "slug": "clickhouse_ingestor",
+  "description": "Stream Home Assistant state changes directly into ClickHouse (no PostgreSQL relay required)",
+  "arch": ["aarch64", "amd64", "armhf", "armv7", "i386"],
+  "startup": "application",
+  "panel_icon": "mdi:database-import",
+  "panel_title": "CH Ingestor",
+  "init": false,
+  "homeassistant_api": true,
+  "options": {
+    "clickhouse_host": "",
+    "clickhouse_port": 8123,
+    "clickhouse_user": "default",
+    "clickhouse_password": "",
+    "clickhouse_database": "homeassistant",
+    "clickhouse_table": "states",
+    "batch_size": 500,
+    "flush_interval": 5,
+    "include_attributes": true,
+    "exclude_entities": []
+  },
+  "schema": {
+    "clickhouse_host": "str",
+    "clickhouse_port": "port",
+    "clickhouse_user": "str",
+    "clickhouse_password": "password",
+    "clickhouse_database": "str",
+    "clickhouse_table": "str",
+    "batch_size": "int(1,)",
+    "flush_interval": "int(1,)",
+    "include_attributes": "bool",
+    "exclude_entities": ["str"]
+  }
+}

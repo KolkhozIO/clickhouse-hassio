@@ -1,0 +1,44 @@
+{
+  "configuration": {
+    "clickhouse_host": {
+      "name": "ClickHouse host",
+      "description": "Hostname or IP of the ClickHouse HTTP interface (e.g. your HA host IP)."
+    },
+    "clickhouse_port": {
+      "name": "ClickHouse port",
+      "description": "ClickHouse HTTP port (8124 when using the published port of the ClickHouse add-on)."
+    },
+    "clickhouse_user": {
+      "name": "ClickHouse user",
+      "description": "User to authenticate with."
+    },
+    "clickhouse_password": {
+      "name": "ClickHouse password",
+      "description": "Password for the ClickHouse user."
+    },
+    "clickhouse_database": {
+      "name": "Database",
+      "description": "Target database; created automatically if missing."
+    },
+    "clickhouse_table": {
+      "name": "Table",
+      "description": "Target table; created automatically if missing."
+    },
+    "batch_size": {
+      "name": "Batch size",
+      "description": "Flush to ClickHouse after this many buffered rows."
+    },
+    "flush_interval": {
+      "name": "Flush interval (s)",
+      "description": "Flush buffered rows at least every N seconds."
+    },
+    "include_attributes": {
+      "name": "Include attributes",
+      "description": "Store entity attributes as a JSON string."
+    },
+    "exclude_entities": {
+      "name": "Excluded entities",
+      "description": "List of entity_ids to skip."
+    }
+  }
+}

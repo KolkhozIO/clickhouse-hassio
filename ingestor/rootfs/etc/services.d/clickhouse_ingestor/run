@@ -1,0 +1,22 @@
+#!/usr/bin/with-contenv bashio
+# ==============================================================================
+# Start the ClickHouse ingestor service
+# ==============================================================================
+
+export CLICKHOUSE_HOST="$(bashio::config 'clickhouse_host')"
+export CLICKHOUSE_PORT="$(bashio::config 'clickhouse_port')"
+export CLICKHOUSE_USER="$(bashio::config 'clickhouse_user')"
+export CLICKHOUSE_PASSWORD="$(bashio::config 'clickhouse_password')"
+export CLICKHOUSE_DATABASE="$(bashio::config 'clickhouse_database')"
+export CLICKHOUSE_TABLE="$(bashio::config 'clickhouse_table')"
+export BATCH_SIZE="$(bashio::config 'batch_size')"
+export FLUSH_INTERVAL="$(bashio::config 'flush_interval')"
+export INCLUDE_ATTRIBUTES="$(bashio::config 'include_attributes')"
+export EXCLUDE_ENTITIES="$(bashio::config 'exclude_entities | join(",")')"
+
+if bashio::var.is_empty "${CLICKHOUSE_HOST}"; then
+    bashio::exit.nok "clickhouse_host is not configured. Set it in the add-on configuration."
+fi
+
+bashio::log.info "Starting ClickHouse ingestor -> ${CLICKHOUSE_HOST}:${CLICKHOUSE_PORT}/${CLICKHOUSE_DATABASE}.${CLICKHOUSE_TABLE}"
+exec python3 /app/ingestor.py
