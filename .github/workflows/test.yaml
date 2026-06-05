@@ -1,0 +1,200 @@
+name: Test
+
+# Runs unit tests on every push/PR to main, plus a container-based e2e job
+# that builds the ingestor image with Docker (CI runners have Docker natively —
+# no proxy issues, so plain curl/docker run work without extra flags).
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  # ── Unit tests ──────────────────────────────────────────────────────────────
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6.0.2
+
+      - name: Set up Python
+        uses: actions/setup-python@v5.6.0
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install test dependencies
+        run: pip install -r test/requirements-test.txt
+
+      - name: Run pytest
+        run: python3 -m pytest test/ -v
+
+  # ── Container-based e2e ─────────────────────────────────────────────────────
+  e2e:
+    name: E2E (container)
+    runs-on: ubuntu-latest
+    # CI runners have Docker available; no external proxy, so plain curl/docker
+    # commands work without --noproxy or --http-proxy=false.
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6.0.2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.10.0
+
+      - name: Build ingestor image
+        run: |
+          docker buildx build \
+            --load \
+            --build-arg BUILD_FROM=ghcr.io/hassio-addons/base/amd64:17.2.1 \
+            -t localhost/ch-ingestor:local \
+            ingestor/
+
+      - name: Start ClickHouse
+        run: |
+          docker network create ch_e2e_net
+          docker run -d \
+            --name ch_e2e_ch \
+            --network ch_e2e_net \
+            -p 127.0.0.1:18123:8123 \
+            --ulimit nofile=262144:262144 \
+            -e CLICKHOUSE_SKIP_USER_SETUP=1 \
+            docker.io/clickhouse/clickhouse-server:24.8
+
+      - name: Wait for ClickHouse
+        run: |
+          echo -n "Waiting for ClickHouse"
+          for i in $(seq 1 40); do
+            if curl -sf "http://127.0.0.1:18123/?query=SELECT+1" 2>/dev/null | grep -q '^1$'; then
+              echo " OK (${i}s)"
+              break
+            fi
+            echo -n "."
+            sleep 2
+          done
+          # Final check — fails the step if CH is still not up
+          curl -sf "http://127.0.0.1:18123/?query=SELECT+1" | grep -q '^1$'
+
+      - name: Start mock HA WebSocket server
+        run: |
+          docker run -d \
+            --name ch_e2e_mock \
+            --network ch_e2e_net \
+            -v "$PWD/test/mock_ha_ws.py:/mock.py:ro" \
+            --entrypoint python3 \
+            localhost/ch-ingestor:local \
+            /mock.py --host 0.0.0.0 --port 8765 --events 10 --interval 0.2
+          # Give the mock a moment to bind
+          sleep 1
+
+      - name: Start ingestor
+        run: |
+          docker run -d \
+            --name ch_e2e_ingestor \
+            --network ch_e2e_net \
+            --entrypoint python3 \
+            -e HA_WS_URL=ws://ch_e2e_mock:8765 \
+            -e SUPERVISOR_TOKEN=test-token \
+            -e CLICKHOUSE_HOST=ch_e2e_ch \
+            -e CLICKHOUSE_PORT=8123 \
+            -e CLICKHOUSE_DATABASE=homeassistant \
+            -e CLICKHOUSE_TABLE=states \
+            -e BATCH_SIZE=5 \
+            -e FLUSH_INTERVAL=2 \
+            -e INCLUDE_ATTRIBUTES=true \
+            -e EXCLUDE_ENTITIES=sensor.excluded_demo \
+            localhost/ch-ingestor:local \
+            /app/ingestor.py
+
+      - name: Wait for rows and assert
+        run: |
+          echo -n "Waiting for rows"
+          rows_ready=0
+          for i in $(seq 1 60); do
+            count=$(curl -sf "http://127.0.0.1:18123/?query=SELECT+count()+FROM+homeassistant.states" 2>/dev/null || echo "0")
+            count="${count//[[:space:]]/}"
+            if [[ "${count}" =~ ^[0-9]+$ ]] && [[ "${count}" -gt 0 ]]; then
+              rows_ready=1
+              echo " OK (${i}s, rows=${count})"
+              break
+            fi
+            echo -n "."
+            sleep 1
+          done
+
+          if [[ $rows_ready -ne 1 ]]; then
+            echo " TIMEOUT"
+            echo "==> Ingestor logs:"
+            docker logs ch_e2e_ingestor || true
+            echo "==> Mock logs:"
+            docker logs ch_e2e_mock || true
+            exit 1
+          fi
+
+          fail_count=0
+
+          check_gt() {
+            local label="$1" threshold="$2" query="$3"
+            local val
+            val=$(curl -sf "http://127.0.0.1:18123/?query=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$query")" | tr -d '[:space:]')
+            if [[ "${val}" =~ ^[0-9]+$ ]] && [[ "${val}" -gt "${threshold}" ]]; then
+              echo "PASS  ${label} (got ${val})"
+            else
+              echo "FAIL  ${label} — expected > ${threshold}, got '${val}'"
+              (( fail_count++ )) || true
+            fi
+          }
+
+          check_zero() {
+            local label="$1" query="$2"
+            local val
+            val=$(curl -sf "http://127.0.0.1:18123/?query=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$query")" | tr -d '[:space:]')
+            if [[ "${val}" == "0" ]]; then
+              echo "PASS  ${label} (got 0)"
+            else
+              echo "FAIL  ${label} — expected 0, got '${val}'"
+              (( fail_count++ )) || true
+            fi
+          }
+
+          check_gt  "total rows > 0" \
+                    0 \
+                    "SELECT count() FROM homeassistant.states"
+
+          check_gt  "numeric sensor non-NULL state_float rows > 0" \
+                    0 \
+                    "SELECT count() FROM homeassistant.states WHERE entity_id='sensor.numeric_demo' AND state_float IS NOT NULL"
+
+          check_gt  "text sensor NULL state_float rows > 0" \
+                    0 \
+                    "SELECT count() FROM homeassistant.states WHERE entity_id='sensor.text_demo' AND state_float IS NULL"
+
+          check_zero "text sensor no non-NULL state_float rows" \
+                     "SELECT count() FROM homeassistant.states WHERE entity_id='sensor.text_demo' AND state_float IS NOT NULL"
+
+          check_zero "excluded entity has 0 rows" \
+                     "SELECT count() FROM homeassistant.states WHERE entity_id='sensor.excluded_demo'"
+
+          check_gt  "at least one row with JSON attributes" \
+                    0 \
+                    "SELECT count() FROM homeassistant.states WHERE length(attributes) > 2"
+
+          if [[ $fail_count -eq 0 ]]; then
+            echo ""
+            echo "E2E PASS — all assertions passed"
+          else
+            echo ""
+            echo "E2E FAIL: ${fail_count} assertion(s) failed"
+            docker logs ch_e2e_ingestor || true
+            exit 1
+          fi
+
+      - name: Teardown (always)
+        if: always()
+        run: |
+          docker rm -f ch_e2e_ingestor ch_e2e_mock ch_e2e_ch 2>/dev/null || true
+          docker network rm ch_e2e_net 2>/dev/null || true
