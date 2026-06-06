@@ -5,7 +5,7 @@ FROM $BUILD_FROM
 
 RUN \
   apk add --no-cache \
-    python3 curl docker-cli docker-compose pwgen perl-utils
+    python3 curl docker-cli docker-cli-compose pwgen perl-utils
 
 COPY setup.sh /setup.sh
 RUN chmod +x /setup.sh

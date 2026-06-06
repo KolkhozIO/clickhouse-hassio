@@ -7,7 +7,7 @@ ARG BUILD_ARCH
 RUN arch=${BUILD_ARCH:-amd64} \
     && case $arch in \
         amd64) rarch=x86_64 ;; \
-        arm64) rarch=aarch64 ;; \
+        aarch64|arm64) rarch=aarch64 ;; \
     esac \
     && ln -s "${rarch}-linux-gnu" /lib/linux-gnu
 
@@ -29,24 +29,28 @@ ARG BUILD_ARCH
 RUN arch=${BUILD_ARCH:-amd64} \
     && case $arch in \
         amd64) mkdir -p /lib64 && ln -sf /lib/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2 ;; \
-        arm64) : ;; \
+        aarch64|arm64) : ;; \
     esac
 
 # lts / testing / prestable / etc
-ARG REPO_CHANNEL="stable"
+ARG REPO_CHANNEL="lts"
 ARG REPOSITORY="https://packages.clickhouse.com/tgz/${REPO_CHANNEL}"
-ARG VERSION="24.8.12.35"
+ARG VERSION="24.8.12.28"
 ARG PACKAGES="clickhouse-client clickhouse-server clickhouse-common-static"
 
 RUN arch=${BUILD_ARCH:-amd64} \
+    && case $arch in \
+        aarch64) dlarch=arm64 ;; \
+        *) dlarch=$arch ;; \
+    esac \
     && for package in ${PACKAGES}; do \
     ( \
         cd /tmp \
-        && echo "Get ${REPOSITORY}/${package}-${VERSION}-${arch}.tgz" \
-            && wget -c -q "${REPOSITORY}/${package}-${VERSION}-${arch}.tgz" \
-            && wget -c -q "${REPOSITORY}/${package}-${VERSION}-${arch}.tgz.sha512" \
-            && sed 's:/output/:/tmp/:' < "${package}-${VERSION}-${arch}.tgz.sha512" | sha512sum -c \
-            && tar xvzf "${package}-${VERSION}-${arch}.tgz" --strip-components=1 -C / \
+        && echo "Get ${REPOSITORY}/${package}-${VERSION}-${dlarch}.tgz" \
+            && wget -c -q "${REPOSITORY}/${package}-${VERSION}-${dlarch}.tgz" \
+            && wget -c -q "${REPOSITORY}/${package}-${VERSION}-${dlarch}.tgz.sha512" \
+            && sed 's:/output/:/tmp/:' < "${package}-${VERSION}-${dlarch}.tgz.sha512" | sha512sum -c \
+            && tar xvzf "${package}-${VERSION}-${dlarch}.tgz" --strip-components=1 -C / \
     ) \
     ; done \
     && rm /tmp/*.tgz /install -rf \
