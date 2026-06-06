@@ -12,15 +12,14 @@ ENV LANG en_US.utf8
 RUN mkdir /docker-entrypoint-initdb.d
 
 ENV PG_MAJOR 17
-ENV PG_VERSION 17.2
-ENV PG_SHA256 d3f547c8f2d593006d396ec610817088194488b3940e79133f3747053e1858c6
+ENV PG_VERSION 17.10
+ENV PG_SHA256 078a03516dcdbdb705fecaf415ea3d13a956c589e46f09fed68a06fb00598c90
 ENV POSTGRES_USER homeassistant
 ENV POSTGRES_PASSWORD homeassistant
 ENV POSTGRES_DB homeassistant
 
-ENV DOCKER_PG_LLVM_DEPS \
-		llvm15-dev \
-		clang15
+RUN sed -i -E 's/^(musl|musl-utils|libcrypto3|libssl3|openssl)=.*/\1/' /etc/apk/world && \
+    apk upgrade --no-cache musl musl-utils libcrypto3 libssl3 openssl
 
 RUN set -eux; \
 	\
@@ -36,7 +35,6 @@ RUN set -eux; \
 	rm postgresql.tar.bz2; \
 	\
 	apk add --no-cache --virtual .build-deps \
-		$DOCKER_PG_LLVM_DEPS \
 		bison \
 		coreutils \
 		dpkg-dev dpkg \
@@ -68,17 +66,10 @@ RUN set -eux; \
 	awk '$1 == "#define" && $2 == "DEFAULT_PGSOCKET_DIR" && $3 == "\"/tmp\"" { $3 = "\"/var/run/postgresql\""; print; next } { print }' src/include/pg_config_manual.h > src/include/pg_config_manual.h.new; \
 	mv src/include/pg_config_manual.h.new src/include/pg_config_manual.h; \
 	gnuArch="$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)"; \
-	wget -O config/config.guess 'https://git.savannah.gnu.org/cgit/config.git/plain/config.guess?id=7d3d27baf8107b630586c962c057e22149653deb'; \
-	wget -O config/config.sub 'https://git.savannah.gnu.org/cgit/config.git/plain/config.sub?id=7d3d27baf8107b630586c962c057e22149653deb'; \
-	\
-	export LLVM_CONFIG="/usr/lib/llvm15/bin/llvm-config"; \
-	export CLANG=clang-15; \
 	\
 	./configure \
 		--enable-option-checking=fatal \
 		--build="$gnuArch" \
-		--enable-integer-datetimes \
-		--enable-thread-safety \
 		--enable-tap-tests \
 		--disable-rpath \
 		--with-uuid=e2fs \
@@ -96,12 +87,11 @@ RUN set -eux; \
 		--with-libxml \
 		--with-libxslt \
 		--with-icu \
-		--with-llvm \
 		--with-lz4 \
 		--with-zstd \
 	; \
-	make -j "$(nproc)" world; \
-	make install-world; \
+	make -j "$(nproc)"; \
+	make install; \
 	make -C contrib install; \
         \
     wget -O pg_ivm.tar.gz "https://github.com/sraoss/pg_ivm/archive/refs/tags/v1.9.tar.gz"; \
