@@ -2,6 +2,7 @@
   "name": "ClickHouse Ingestor Add-on",
   "version": "1.0.0",
   "slug": "clickhouse_ingestor",
+  "image": "ghcr.io/kolkhozio/{arch}-addon-ingestor",
   "description": "Stream Home Assistant state changes directly into ClickHouse (no PostgreSQL relay required)",
   "arch": ["aarch64", "amd64"],
   "panel_icon": "mdi:database-import",

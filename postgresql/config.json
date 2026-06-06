@@ -2,6 +2,7 @@
   "name": "PostgreSQL Add-on",
   "version": "1.1.0",
   "slug": "postgre_addon",
+  "image": "ghcr.io/kolkhozio/{arch}-addon-postgresql",
   "description": "PostgreSQL Home Assistant add-on (DEPRECATED: relay path replaced by the ClickHouse Ingestor add-on)",
   "arch": ["aarch64", "amd64"],
   "startup": "services",
