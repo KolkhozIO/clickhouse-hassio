@@ -20,7 +20,7 @@
 #   bash scripts/e2e.sh
 #
 # Knobs (env vars with defaults):
-#   CH_IMAGE        ClickHouse server image  (default: docker.io/clickhouse/clickhouse-server:24.8)
+#   CH_IMAGE        ClickHouse server image  (default: docker.io/clickhouse/clickhouse-server:26.3.12.3)
 #   INGESTOR_IMAGE  Ingestor image           (default: localhost/ch-ingestor:local)
 #   NET             Podman network name      (default: ch_e2e_net)
 #   CH_CONTAINER    ClickHouse container     (default: ch_e2e_ch)
@@ -34,7 +34,7 @@
 set -euo pipefail
 
 # ── Configurable defaults ─────────────────────────────────────────────────────
-CH_IMAGE="${CH_IMAGE:-docker.io/clickhouse/clickhouse-server:24.8}"
+CH_IMAGE="${CH_IMAGE:-docker.io/clickhouse/clickhouse-server:26.3.12.3}"
 INGESTOR_IMAGE="${INGESTOR_IMAGE:-localhost/ch-ingestor:local}"
 NET="${NET:-ch_e2e_net}"
 CH_CONTAINER="${CH_CONTAINER:-ch_e2e_ch}"
