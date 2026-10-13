@@ -59,7 +59,7 @@ LIMIT 100;
 2. Point the HA recorder at PostgreSQL in `configuration.yaml`:
    ```yaml
    recorder:
-     db_url: "postgresql://homeassistant:homeassistant@homeassistant/homeassistant"
+     db_url: "postgresql://homeassistant:<PASSWORD>@homeassistant/homeassistant"
    ```
 3. (optional) migrate SQLite.
 4. Create the incremental materialized view in PostgreSQL:
